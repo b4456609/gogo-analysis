@@ -1,16 +1,7 @@
 """SimpleApp"""
 
 from pyspark import SparkContext
-import client
+import WeatherClient
+sc = SparkContext("local","Weather Analyzer",pyFiles=['WeatherClient.py', 'WeatherServiceClient.py', 'Model.py'])
 
-logFile = "/home/bernie/pf/spark-1.6.1-bin-hadoop2.6/README.md"
-sc = SparkContext("local","Simple App")
-logData = sc.textFile(logFile).cache()
-
-numAs = logData.filter(lambda s: 'a' in s).count()
-numBs = logData.filter(lambda s: 'b' in s).count()
-
-
-print("Lines with a: %i, lines with b: %i"%(numAs, numBs))
-
-client.rain_detial()
+print sc.parallelize(WeatherClient.basic_metrics()).map(lambda x : x.cal()).first()

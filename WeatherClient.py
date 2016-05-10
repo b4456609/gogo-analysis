@@ -5,7 +5,9 @@ import json
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 from xml.dom.minidom import Node
+import datetime
 
+from Model import Metrics
 
 station_id = '466940'
 # for keelung predict
@@ -29,9 +31,6 @@ def getUV():
     for i in j:
         if i['SiteName'].encode('utf-8') == "基隆":
             return i['UVI']
-    # print(response.text)
-
-print getUV()
 
 def remove_blanks(node):
     for x in node.childNodes:
@@ -78,8 +77,7 @@ def keelung_predict():
         "./cwb:weatherElement[cwb:elementName='PoP']//cwb:value", ns)
     des = location.findall(
         "./cwb:weatherElement[cwb:elementName='WeatherDescription']//cwb:value", ns)
-    for t in des:
-        print t.text
+
 
 
 def basic_metrics():
@@ -102,8 +100,9 @@ def basic_metrics():
     wind_dir_10min = location.find(
         "./cwb:weatherElement[cwb:elementName='H_10D']/cwb:elementValue/cwb:value", ns).text
 
-    print time, temp, humd, wind_speed_10min, wind_dir_10min
+    time = datetime.datetime.strptime(time,"%Y-%m-%dT%H:%M:%S+08:00")
 
+    return Metrics(time, temp, humd, wind_speed_10min, wind_dir_10min)
 
 def rain_detial():
     response = getapi("O-A0002-001")
