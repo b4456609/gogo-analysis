@@ -1,10 +1,45 @@
+# -*- coding: UTF-8 -*-
+
 import requests
+import json
 import xml.etree.ElementTree as ET
+from xml.dom import minidom
+from xml.dom.minidom import Node
 
 
 station_id = '466940'
 # for keelung predict
 geocode = '1001701'
+
+
+
+def getUV():
+    url = "http://opendata.epa.gov.tw/ws/Data/UV/"
+
+    querystring = {"$orderby": "PublishAgency",
+                   "$skip": "0", "$top": "1000", "format": "json"}
+
+    headers = {
+        'cache-control': "no-cache"
+    }
+
+    response = requests.request(
+        "GET", url, headers=headers, params=querystring)
+    j = json.loads(response.text.encode('utf-8').decode('utf-8'))
+    for i in j:
+        if i['SiteName'].encode('utf-8') == "基隆":
+            return i['UVI']
+    # print(response.text)
+
+print getUV()
+
+def remove_blanks(node):
+    for x in node.childNodes:
+        if x.nodeType == Node.TEXT_NODE:
+            if x.nodeValue:
+                x.nodeValue = x.nodeValue.strip()
+        elif x.nodeType == Node.ELEMENT_NODE:
+            remove_blanks(x)
 
 
 def getapi(dataid):
@@ -24,25 +59,28 @@ def getapi(dataid):
 
 def keelung_predict():
     response = getapi("F-D0047-049")
-    root = ET.fromstring(response.text.encode('utf-8'))
+    response_xml = minidom.parseString(response.text.encode('utf-8'))
+    remove_blanks(response_xml)
+    response_xml.normalize()
+    root = ET.fromstring(response_xml.toxml('utf-8'))
     # for name space
     ns = {'cwb': 'urn:cwb:gov:tw:cwbcommon:0.1'}
     # xpath use geocode for keelung
-    # path = ".//cwb:location[cwb:geocode='"+ geocode +"']"
-    path = ".//cwb:location"
-    location = root.findall(path, ns)
+    path = ".//cwb:location[cwb:geocode='" + geocode + "']"
+    # path = ".//cwb:geocode"
+    location = root.find(path, ns)
 
-    for ele in location:
-        if ele.find('cwb:geocode', ns).text.strip() == '1001701':
-            # find target keelung location
-            location = ele
-            break
+    temp = location.findall(
+        "./cwb:weatherElement[cwb:elementName='T']//cwb:value", ns)
+    humid = location.findall(
+        "./cwb:weatherElement[cwb:elementName='RH']//cwb:value", ns)
+    predictRate = location.findall(
+        "./cwb:weatherElement[cwb:elementName='PoP']//cwb:value", ns)
+    des = location.findall(
+        "./cwb:weatherElement[cwb:elementName='WeatherDescription']//cwb:value", ns)
+    for t in des:
+        print t.text
 
-    print location
-    description = location.findall("./cwb:weatherElement[cwb:elementName='WeatherDescription']/cwb:time/cwb:startTime", ns)
-    print description
-    for i in description:
-        print i.text
 
 def basic_metrics():
     response = getapi("O-A0003-001")
@@ -94,4 +132,4 @@ def rain_detial():
         "./cwb:weatherElement[cwb:elementName='HOUR_24']/cwb:elementValue/cwb:value", ns).text
 
     print time, rain_60min, rain_10min, rain_3hr, rain_6hr, rain_12hr, rain_24hr
-rain_detial()
+# rain_detial()
