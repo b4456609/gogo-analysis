@@ -5,5 +5,10 @@ class Metrics:
         self.humd = humd
         self.wind_speed_10min = wind_speed_10min
         self.wind_dir_10min = wind_dir_10min
+        self.sunrise = None
+        self.sunset = None
+
+    def __str__(self):
+        return str(self.__class__) + ": " + str(self.__dict__)
     def cal(self):
         return self.temp + self.humd
