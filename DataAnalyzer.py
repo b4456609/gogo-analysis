@@ -3,10 +3,13 @@
 from pyspark import SparkContext
 import WeatherClient
 import math
-import datetime
+import json
+import WeatherServiceClient
+import time
 
 
 def weather(x):
+    print x
     res = 0.6 * x.temp + 0.4 * x.humd
     if res < 0 or res > 100:
         return -1
@@ -43,23 +46,18 @@ def time(x):
         return 0
     return int(res)
 
+
 def airCal(x):
     res = 0.5 * (100 - x.psi / 3) + 0.5 * (100 - x.pm2_5 * 100 / 71)
     return res
 
-def main():
-    sc = SparkContext("local", "Weather Analyzer", pyFiles=['WeatherClient.py', 'WeatherServiceClient.py', 'Model.py'])
-
-    # get logger
-    log4jLogger = sc._jvm.org.apache.log4j
-    LOGGER = log4jLogger.LogManager.getLogger(__name__)
-
+def request():
     # request for metrics
     basicMetrics = WeatherClient.basic_metrics()
     uvMetrics = WeatherClient.getUV()
     sun = WeatherClient.getSunTime()
     rainMetrics = WeatherClient.rain_detial()
-    airMetcrics = WeatherClient.air_pollution()
+    airMetrics = WeatherClient.air_pollution()
     # predictMetrics = WeatherClient.keelung_predict()
     LOGGER.info('basicMetrics' + basicMetrics.__str__())
 
@@ -67,27 +65,59 @@ def main():
     print uvMetrics
     print sun
     print rainMetrics
-    print airMetcrics
+    print airMetrics
+
+    jsonBody = {
+        'basic': None,
+        'uv': None,
+        'sun': None,
+        'rain': None,
+        'air': None
+    }
 
     if basicMetrics is not None:
         weatherValue = sc.parallelize([basicMetrics]).map(weather).first()
         LOGGER.info('weatherValue' + str(weatherValue))
+
     if uvMetrics is not None:
         print uvMetrics
         uvValue = sc.parallelize([uvMetrics]).map(uv).first()
         LOGGER.info('uvValue' + str(uvValue))
+        jsonBody['uv'] = uvMetrics
+
     if sun is not None and basicMetrics is not None:
-        timeValue = sc.parallelize([{'basicMetrics':basicMetrics, 'sun':sun}]).map(time).first()
+        timeValue = sc.parallelize([{'basicMetrics': basicMetrics, 'sun': sun}]).map(time).first()
         LOGGER.info('timeValue' + str(timeValue))
+        sun.sunrise = sun.sunrise.isoformat()
+        sun.sunset = sun.sunset.isoformat()
+        jsonBody['sun'] = sun.__dict__
+
     if rainMetrics is not None:
         # rainValue =
-        pass
-    if airMetcrics is not None:
-        uvValue = sc.parallelize([airMetcrics]).map(airCal).first()
+        jsonBody['rain'] = rainMetrics.__dict__
+
+    if airMetrics is not None:
+        uvValue = sc.parallelize([airMetrics]).map(airCal).first()
         LOGGER.info('timeValue' + str(uvValue))
+        jsonBody['air'] = airMetrics.__dict__
 
-    #
-    # print weatherValue, uvValue, timeValue
+    basicMetrics.time = basicMetrics.time.isoformat()
+    jsonBody['basic'] = basicMetrics.__dict__
+
+    return jsonBody
 
 
+def main():
+    while True:
+        jsonBody = request()
+        print json.dumps(jsonBody)
+        WeatherServiceClient.postWeather(json.dumps(jsonBody))
+        time.sleep(180)
+
+
+sc = SparkContext("local", "Weather Analyzer", pyFiles=['WeatherClient.py', 'WeatherServiceClient.py'])
+
+# get logger
+log4jLogger = sc._jvm.org.apache.log4j
+LOGGER = log4jLogger.LogManager.getLogger(__name__)
 main()

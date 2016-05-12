@@ -9,7 +9,6 @@ def postWeather(obj):
 
     url = "http://140.121.101.164:6000/weather"
 
-    payload = json.dumps(obj)
+    payload = obj
 
     response = requests.request("POST", url, data=payload, headers=headers)
-    print(response.text)

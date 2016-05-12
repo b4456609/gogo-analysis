@@ -6,8 +6,7 @@ import xml.etree.ElementTree as ET
 from xml.dom import minidom
 from xml.dom.minidom import Node
 import datetime
-from Model import Metrics
-import dateutil.parser
+from  dateutil.parser import parse
 import collections
 
 station_id = '466940'
@@ -20,14 +19,22 @@ lng = '121.7391833'
 
 uv_site = '基隆'
 
-SunTime = collections.namedtuple('SunTime',
-                                    ['sunrise','sunset'])
+
+class SunTime(object):
+    def __init__(self, sunrise, sunset):
+        self.sunrise = sunrise
+        self.sunset = sunset
+
+    def __str__(self):
+        return str(self.__class__) + ": " + str(self.__dict__)
+
+
 def getSunTime():
     url = 'http://api.sunrise-sunset.org/json?lat=' + lat + '&lng=' + lng + '&formatted=0'
     response = requests.get(url)
     data = json.loads(response.content)
-    sunrise = dateutil.parser.parse(data['results']['sunrise']) + datetime.timedelta(hours=8)
-    sunset = dateutil.parser.parse(data['results']['sunset']) + datetime.timedelta(hours=8)
+    sunrise = parse(data['results']['sunrise']) + datetime.timedelta(hours=8)
+    sunset = parse(data['results']['sunset']) + datetime.timedelta(hours=8)
     return SunTime(sunrise=sunrise.time(), sunset=sunset.time())
 
 
@@ -103,8 +110,17 @@ def keelung_predict():
         "./cwb:weatherElement[cwb:elementName='WeatherDescription']//cwb:value", ns)
 
 
-BasicMetrics = collections.namedtuple('BasicMetrics',
-                                    ['time', 'temp', 'humd', 'wind_speed_10min', 'wind_dir_10min'])
+class BasicMetrics(object):
+    def __init__(self, time, temp, humd, wind_speed_10min, wind_dir_10min):
+        self.time = time
+        self.temp = temp
+        self.humd = humd
+        self.wind_speed_10min = wind_speed_10min
+        self.wind_dir_10min = wind_dir_10min
+
+    def __str__(self):
+        return str(self.__class__) + ": " + str(self.__dict__)
+
 
 def basic_metrics():
     response = getapi("O-A0003-001")
@@ -134,7 +150,8 @@ def basic_metrics():
         wind_speed_10min = float(wind_speed_10min)
         wind_dir_10min = float(wind_dir_10min)
 
-        return BasicMetrics(time=time,temp=temp,humd=humd,wind_speed_10min=wind_speed_10min,wind_dir_10min=wind_dir_10min)
+        return BasicMetrics(time=time, temp=temp, humd=humd, wind_speed_10min=wind_speed_10min,
+                            wind_dir_10min=wind_dir_10min)
     except Exception as e:
         print "Unexpected error in basic_metrics"
         print str(e)
@@ -142,7 +159,7 @@ def basic_metrics():
 
 
 RainDetail = collections.namedtuple('RainDetail',
-                                    ['time', 'rain_10min', 'rain_60min', 'rain_3hr', 'rain_6hr', 'rain_12hr',
+                                    ['rain_10min', 'rain_60min', 'rain_3hr', 'rain_6hr', 'rain_12hr',
                                      'rain_24hr'])
 
 
@@ -160,7 +177,6 @@ def rain_detial():
         if location == None:
             return None
 
-        time = location.find(".//cwb:obsTime", ns).text
         rain_60min = location.find(
             "./cwb:weatherElement[cwb:elementName='RAIN']/cwb:elementValue/cwb:value", ns).text
         rain_10min = location.find(
@@ -174,8 +190,8 @@ def rain_detial():
         rain_24hr = location.find(
             "./cwb:weatherElement[cwb:elementName='HOUR_24']/cwb:elementValue/cwb:value", ns).text
 
-        return RainDetail(time=time, rain_3hr=rain_3hr, rain_6hr=rain_6hr, rain_10min=rain_10min, rain_12hr=rain_12hr,
-                          rain_24hr=rain_24hr, rain_60min=rain_60min)
+        return RainDetail(rain_3hr=float(rain_3hr), rain_6hr=float(rain_6hr), rain_10min=float(rain_10min), rain_12hr=float(rain_12hr),
+                          rain_24hr=float(rain_24hr), rain_60min=float(rain_60min))
     except Exception as e:
         print "Unexpected error in rain_detial"
         print str(e)
@@ -183,6 +199,7 @@ def rain_detial():
 
 
 AirPollution = collections.namedtuple('AirPollution', ['psi', 'pm2_5'])
+
 
 def air_pollution():
     try:
