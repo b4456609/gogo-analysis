@@ -8,6 +8,7 @@ from xml.dom.minidom import Node
 import datetime
 from Model import Metrics
 import dateutil.parser
+import collections
 
 station_id = '466940'
 # for keelung predict
@@ -17,13 +18,18 @@ geocode = '1001701'
 lat = '25.1276033'
 lng = '121.7391833'
 
+uv_site = '基隆'
+
+SunTime = collections.namedtuple('SunTime',
+                                    ['sunrise','sunset'])
 def getSunTime():
     url = 'http://api.sunrise-sunset.org/json?lat=' + lat + '&lng=' + lng + '&formatted=0'
     response = requests.get(url)
     data = json.loads(response.content)
-    sunrise = dateutil.parser.parse(data['results']['sunrise'])+datetime.timedelta(hours=8)
-    sunset = dateutil.parser.parse(data['results']['sunset'])+datetime.timedelta(hours=8)
-    return {'sunrise':sunrise.time(), 'sunset':sunset.time()}
+    sunrise = dateutil.parser.parse(data['results']['sunrise']) + datetime.timedelta(hours=8)
+    sunset = dateutil.parser.parse(data['results']['sunset']) + datetime.timedelta(hours=8)
+    return SunTime(sunrise=sunrise.time(), sunset=sunset.time())
+
 
 def getUV():
     url = "http://opendata.epa.gov.tw/ws/Data/UV/"
@@ -34,13 +40,21 @@ def getUV():
     headers = {
         'cache-control': "no-cache"
     }
+    try:
+        response = requests.request(
+            "GET", url, headers=headers, params=querystring)
+        j = json.loads(response.text.encode('utf-8').decode('utf-8'))
+        for i in j:
+            if i['SiteName'].encode('utf-8') == uv_site:
+                if float(i['UVI']) >= 0:
+                    return float(i['UVI'])
+                else:
+                    return None
+    except Exception as e:
+        print "Unexpected error in getUV"
+        print str(e)
+        return None
 
-    response = requests.request(
-        "GET", url, headers=headers, params=querystring)
-    j = json.loads(response.text.encode('utf-8').decode('utf-8'))
-    for i in j:
-        if i['SiteName'].encode('utf-8') == "基隆":
-            return float(i['UVI'])
 
 def remove_blanks(node):
     for x in node.childNodes:
@@ -63,7 +77,7 @@ def getapi(dataid):
 
     response = requests.request(
         "GET", url, headers=headers, params=querystring)
-    return(response)
+    return (response)
 
 
 def keelung_predict():
@@ -88,6 +102,10 @@ def keelung_predict():
     des = location.findall(
         "./cwb:weatherElement[cwb:elementName='WeatherDescription']//cwb:value", ns)
 
+
+BasicMetrics = collections.namedtuple('BasicMetrics',
+                                    ['time', 'temp', 'humd', 'wind_speed_10min', 'wind_dir_10min'])
+
 def basic_metrics():
     response = getapi("O-A0003-001")
     root = ET.fromstring(response.text.encode('utf-8'))
@@ -97,22 +115,35 @@ def basic_metrics():
     # xpath use station id
     path = "cwb:location[cwb:stationId='" + station_id + "']"
 
-    location = root.find(path, ns)
-    time = location.find(".//cwb:obsTime", ns).text
-    temp = location.find(
-        "./cwb:weatherElement[cwb:elementName='TEMP']/cwb:elementValue/cwb:value", ns).text
-    humd = location.find(
-        "./cwb:weatherElement[cwb:elementName='HUMD']/cwb:elementValue/cwb:value", ns).text
-    wind_speed_10min = location.find(
-        "./cwb:weatherElement[cwb:elementName='H_F10']/cwb:elementValue/cwb:value", ns).text
-    wind_dir_10min = location.find(
-        "./cwb:weatherElement[cwb:elementName='H_10D']/cwb:elementValue/cwb:value", ns).text
+    try:
+        location = root.find(path, ns)
 
-    time = datetime.datetime.strptime(time,"%Y-%m-%dT%H:%M:%S+08:00")
+        time = location.find(".//cwb:obsTime", ns).text
+        temp = location.find(
+            "./cwb:weatherElement[cwb:elementName='TEMP']/cwb:elementValue/cwb:value", ns).text
+        humd = location.find(
+            "./cwb:weatherElement[cwb:elementName='HUMD']/cwb:elementValue/cwb:value", ns).text
+        wind_speed_10min = location.find(
+            "./cwb:weatherElement[cwb:elementName='H_F10']/cwb:elementValue/cwb:value", ns).text
+        wind_dir_10min = location.find(
+            "./cwb:weatherElement[cwb:elementName='H_10D']/cwb:elementValue/cwb:value", ns).text
 
-    return Metrics(time, float(temp), float(humd), float(wind_speed_10min), float(wind_dir_10min))
+        time = datetime.datetime.strptime(time, "%Y-%m-%dT%H:%M:%S+08:00")
+        humd = float(humd)
+        temp = float(temp)
+        wind_speed_10min = float(wind_speed_10min)
+        wind_dir_10min = float(wind_dir_10min)
 
-basic_metrics()
+        return BasicMetrics(time=time,temp=temp,humd=humd,wind_speed_10min=wind_speed_10min,wind_dir_10min=wind_dir_10min)
+    except Exception as e:
+        print "Unexpected error in basic_metrics"
+        print str(e)
+        return None
+
+
+RainDetail = collections.namedtuple('RainDetail',
+                                    ['time', 'rain_10min', 'rain_60min', 'rain_3hr', 'rain_6hr', 'rain_12hr',
+                                     'rain_24hr'])
 
 
 def rain_detial():
@@ -124,21 +155,52 @@ def rain_detial():
     # xpath use station id
     path = "cwb:location[cwb:stationId='" + station_id + "']"
 
-    location = root.find(path, ns)
-    print location
+    try:
+        location = root.find(path, ns)
+        if location == None:
+            return None
 
-    time = location.find(".//cwb:obsTime", ns).text
-    rain_60min = location.find(
-        "./cwb:weatherElement[cwb:elementName='RAIN']/cwb:elementValue/cwb:value", ns).text
-    rain_10min = location.find(
-        "./cwb:weatherElement[cwb:elementName='MIN_10']/cwb:elementValue/cwb:value", ns).text
-    rain_3hr = location.find(
-        "./cwb:weatherElement[cwb:elementName='HOUR_3']/cwb:elementValue/cwb:value", ns).text
-    rain_6hr = location.find(
-        "./cwb:weatherElement[cwb:elementName='HOUR_6']/cwb:elementValue/cwb:value", ns).text
-    rain_12hr = location.find(
-        "./cwb:weatherElement[cwb:elementName='HOUR_12']/cwb:elementValue/cwb:value", ns).text
-    rain_24hr = location.find(
-        "./cwb:weatherElement[cwb:elementName='HOUR_24']/cwb:elementValue/cwb:value", ns).text
+        time = location.find(".//cwb:obsTime", ns).text
+        rain_60min = location.find(
+            "./cwb:weatherElement[cwb:elementName='RAIN']/cwb:elementValue/cwb:value", ns).text
+        rain_10min = location.find(
+            "./cwb:weatherElement[cwb:elementName='MIN_10']/cwb:elementValue/cwb:value", ns).text
+        rain_3hr = location.find(
+            "./cwb:weatherElement[cwb:elementName='HOUR_3']/cwb:elementValue/cwb:value", ns).text
+        rain_6hr = location.find(
+            "./cwb:weatherElement[cwb:elementName='HOUR_6']/cwb:elementValue/cwb:value", ns).text
+        rain_12hr = location.find(
+            "./cwb:weatherElement[cwb:elementName='HOUR_12']/cwb:elementValue/cwb:value", ns).text
+        rain_24hr = location.find(
+            "./cwb:weatherElement[cwb:elementName='HOUR_24']/cwb:elementValue/cwb:value", ns).text
 
-    print time, rain_60min, rain_10min, rain_3hr, rain_6hr, rain_12hr, rain_24hr
+        return RainDetail(time=time, rain_3hr=rain_3hr, rain_6hr=rain_6hr, rain_10min=rain_10min, rain_12hr=rain_12hr,
+                          rain_24hr=rain_24hr, rain_60min=rain_60min)
+    except Exception as e:
+        print "Unexpected error in rain_detial"
+        print str(e)
+        return None
+
+
+AirPollution = collections.namedtuple('AirPollution', ['psi', 'pm2_5'])
+
+def air_pollution():
+    try:
+        url = "http://opendata2.epa.gov.tw/AQX.json"
+
+        headers = {
+            'cache-control': "no-cache",
+        }
+
+        response = requests.request("GET", url, headers=headers)
+
+        data = json.loads(response.content)
+        for i in data:
+            if i['County'].encode('utf-8') == '基隆市':
+                psi = int(i['PSI'])
+                pm2_5 = int(i['PM2.5'])
+                return AirPollution(psi=psi, pm2_5=pm2_5)
+    except Exception as e:
+        print "Unexpected error in rain_detial"
+        print str(e)
+        return None

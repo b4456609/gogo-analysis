@@ -5,6 +5,7 @@ class Metrics:
         self.humd = humd
         self.wind_speed_10min = wind_speed_10min
         self.wind_dir_10min = wind_dir_10min
+        self.uv = None
         self.sunrise = None
         self.sunset = None
 
