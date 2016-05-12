@@ -84,7 +84,7 @@ def main():
         pass
     if airMetcrics is not None:
         uvValue = sc.parallelize([airMetcrics]).map(airCal).first()
-        LOGGER.info(uvValue)
+        LOGGER.info('timeValue' + str(uvValue))
 
     #
     # print weatherValue, uvValue, timeValue
