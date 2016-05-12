@@ -1,5 +1,5 @@
 import requests
-import json
+import os
 
 def postWeather(obj):
     headers = {
@@ -7,7 +7,7 @@ def postWeather(obj):
         'cache-control': "no-cache",
         }
 
-    url = "http://140.121.101.164:6000/weather"
+    url = "http://" + os.environ.get('SERVICE_HOST') + "/weather"
 
     payload = obj
 
