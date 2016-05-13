@@ -146,10 +146,10 @@ def basic_metrics():
             "./cwb:weatherElement[cwb:elementName='H_10D']/cwb:elementValue/cwb:value", ns).text
 
         time = parse(time)
-        humd = float(humd)
-        temp = float(temp)
-        wind_speed_10min = float(wind_speed_10min)
-        wind_dir_10min = float(wind_dir_10min)
+        humd = max(float(humd), -1)
+        temp = max(float(temp), -1)
+        wind_speed_10min = max(float(wind_speed_10min), -1)
+        wind_dir_10min = max(float(wind_dir_10min), -1)
 
         return BasicMetrics(time=time, temp=temp, humd=humd, wind_speed_10min=wind_speed_10min,
                             wind_dir_10min=wind_dir_10min)
