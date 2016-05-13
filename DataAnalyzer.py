@@ -111,11 +111,12 @@ def main():
     while True:
         jsonBody = request()
         print json.dumps(jsonBody)
-        WeatherServiceClient.postWeather(json.dumps(jsonBody))
-        time.sleep(180)
+        # WeatherServiceClient.postWeather(json.dumps(jsonBody))
 
 
-sc = SparkContext("local", "Weather Analyzer", pyFiles=['WeatherClient.py', 'WeatherServiceClient.py'])
+# sc = SparkContext("local", "Weather Analyzer", pyFiles=['WeatherClient.py', 'WeatherServiceClient.py'])
+# sc = SparkContext("spark://bernie-All-Series:7077", "Weather Analyzer", pyFiles=['WeatherClient.py', 'WeatherServiceClient.py'])
+sc = SparkContext("spark://140.121.101.164:7077", "Weather Analyzer", pyFiles=['WeatherClient.py', 'WeatherServiceClient.py'])
 
 # get logger
 log4jLogger = sc._jvm.org.apache.log4j
