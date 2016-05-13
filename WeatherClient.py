@@ -8,6 +8,7 @@ from xml.dom.minidom import Node
 import datetime
 from  dateutil.parser import parse
 import collections
+import pytz
 
 station_id = '466940'
 # for keelung predict
@@ -33,9 +34,9 @@ def getSunTime():
     url = 'http://api.sunrise-sunset.org/json?lat=' + lat + '&lng=' + lng + '&formatted=0'
     response = requests.get(url)
     data = json.loads(response.content)
-    sunrise = parse(data['results']['sunrise']) + datetime.timedelta(hours=8)
-    sunset = parse(data['results']['sunset']) + datetime.timedelta(hours=8)
-    return SunTime(sunrise=sunrise.time(), sunset=sunset.time())
+    sunrise = parse(data['results']['sunrise']).astimezone(pytz.timezone('Asia/Taipei'))
+    sunset = parse(data['results']['sunset']).astimezone(pytz.timezone('Asia/Taipei'))
+    return SunTime(sunrise=sunrise, sunset=sunset)
 
 
 def getUV():
@@ -144,7 +145,7 @@ def basic_metrics():
         wind_dir_10min = location.find(
             "./cwb:weatherElement[cwb:elementName='H_10D']/cwb:elementValue/cwb:value", ns).text
 
-        time = datetime.datetime.strptime(time, "%Y-%m-%dT%H:%M:%S+08:00")
+        time = parse(time)
         humd = float(humd)
         temp = float(temp)
         wind_speed_10min = float(wind_speed_10min)
@@ -190,7 +191,15 @@ def rain_detial():
         rain_24hr = location.find(
             "./cwb:weatherElement[cwb:elementName='HOUR_24']/cwb:elementValue/cwb:value", ns).text
 
-        return RainDetail(rain_3hr=float(rain_3hr), rain_6hr=float(rain_6hr), rain_10min=float(rain_10min), rain_12hr=float(rain_12hr),
+        rain_3hr = max(float(rain_3hr),-1)
+        rain_6hr = max(float(rain_6hr),-1)
+        rain_10min = max(float(rain_10min),-1)
+        rain_12hr = max(float(rain_12hr),-1)
+        rain_24hr = max(float(rain_24hr),-1)
+        rain_60min = max(float(rain_60min),-1)
+
+        return RainDetail(rain_3hr=float(rain_3hr), rain_6hr=float(rain_6hr), rain_10min=float(rain_10min),
+                          rain_12hr=float(rain_12hr),
                           rain_24hr=float(rain_24hr), rain_60min=float(rain_60min))
     except Exception as e:
         print "Unexpected error in rain_detial"

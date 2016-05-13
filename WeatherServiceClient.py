@@ -7,8 +7,9 @@ def postWeather(obj):
         'cache-control': "no-cache",
         }
 
-    url = "http://" + os.environ.get('SERVICE_HOST') + "/weather"
+    url = "http://140.121.101.164:5000/"
 
     payload = obj
-
+    print payload
     response = requests.request("POST", url, data=payload, headers=headers)
+    print  response
