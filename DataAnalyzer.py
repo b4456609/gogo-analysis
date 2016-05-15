@@ -131,7 +131,7 @@ def request():
     if airMetrics is not None:
         airValue = sc.parallelize([airMetrics]).map(airCal).first()
         jsonBody['value']['air'] = airValue
-        LOGGER.info('airValue' + str(uvValue))
+        LOGGER.info('airValue' + str(airValue))
         jsonBody['air'] = airMetrics.__dict__
 
     basicMetrics.time = basicMetrics.time.isoformat()
