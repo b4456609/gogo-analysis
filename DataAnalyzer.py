@@ -144,7 +144,12 @@ def main():
     while True:
         jsonBody = request()
         print json.dumps(jsonBody)
-        WeatherServiceClient.postWeather(json.dumps(jsonBody))
+        try:
+            WeatherServiceClient.postWeather(json.dumps(jsonBody))
+        except Exception as e:
+            print "Unexpected error in rain_detial"
+            print str(e)
+            return None
         time.sleep(180)
 
 
