@@ -74,18 +74,25 @@ def remove_blanks(node):
 
 
 def getapi(dataid):
-    url = "http://opendata.cwb.gov.tw/opendataapi"
+    try:
+        url = "http://opendata.cwb.gov.tw/opendataapi"
 
-    querystring = {"dataid": dataid,
-                   "authorizationkey": "CWB-4511DE0E-A96A-4A98-9A34-5535D92A0DBF"}
+        querystring = {"dataid": dataid,
+                       "authorizationkey": "CWB-4511DE0E-A96A-4A98-9A34-5535D92A0DBF"}
 
-    headers = {
-        'cache-control': "no-cache"
-    }
+        headers = {
+            'cache-control': "no-cache"
+        }
 
-    response = requests.request(
-        "GET", url, headers=headers, params=querystring)
-    return (response)
+        response = requests.request(
+            "GET", url, headers=headers, params=querystring)
+        print response
+        return response
+    except Exception as e:
+        print "Unexpected error in basic_metrics"
+        print str(e)
+        return None
+
 
 
 def keelung_predict():
@@ -124,15 +131,15 @@ class BasicMetrics(object):
 
 
 def basic_metrics():
-    response = getapi("O-A0003-001")
-    root = ET.fromstring(response.text.encode('utf-8'))
-
-    # for name space
-    ns = {'cwb': 'urn:cwb:gov:tw:cwbcommon:0.1'}
-    # xpath use station id
-    path = "cwb:location[cwb:stationId='" + station_id + "']"
-
     try:
+        response = getapi("O-A0003-001")
+        root = ET.fromstring(response.text.encode('utf-8'))
+
+        # for name space
+        ns = {'cwb': 'urn:cwb:gov:tw:cwbcommon:0.1'}
+        # xpath use station id
+        path = "cwb:location[cwb:stationId='" + station_id + "']"
+
         location = root.find(path, ns)
 
         time = location.find(".//cwb:obsTime", ns).text
@@ -165,15 +172,15 @@ RainDetail = collections.namedtuple('RainDetail',
 
 
 def rain_detial():
-    response = getapi("O-A0002-001")
-    root = ET.fromstring(response.text.encode('utf-8'))
-
-    # for name space
-    ns = {'cwb': 'urn:cwb:gov:tw:cwbcommon:0.1'}
-    # xpath use station id
-    path = "cwb:location[cwb:stationId='" + station_id + "']"
-
     try:
+        response = getapi("O-A0002-001")
+        root = ET.fromstring(response.text.encode('utf-8'))
+
+        # for name space
+        ns = {'cwb': 'urn:cwb:gov:tw:cwbcommon:0.1'}
+        # xpath use station id
+        path = "cwb:location[cwb:stationId='" + station_id + "']"
+
         location = root.find(path, ns)
         if location == None:
             return None
