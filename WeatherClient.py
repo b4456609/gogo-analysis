@@ -107,15 +107,41 @@ def keelung_predict():
     path = ".//cwb:location[cwb:geocode='" + geocode + "']"
     # path = ".//cwb:geocode"
     location = root.find(path, ns)
-
+    time = location.findall(
+        "./cwb:weatherElement[cwb:elementName='T']//cwb:dataTime", ns)
     temp = location.findall(
         "./cwb:weatherElement[cwb:elementName='T']//cwb:value", ns)
     humid = location.findall(
         "./cwb:weatherElement[cwb:elementName='RH']//cwb:value", ns)
+    predictTime = location.findall(
+        "./cwb:weatherElement[cwb:elementName='PoP']//cwb:startTime", ns)
     predictRate = location.findall(
         "./cwb:weatherElement[cwb:elementName='PoP']//cwb:value", ns)
-    des = location.findall(
-        "./cwb:weatherElement[cwb:elementName='WeatherDescription']//cwb:value", ns)
+
+    timevalue = []
+    tempvalue = []
+    humidvalue = []
+    predictTimevalue = []
+    predictRatevalue = []
+
+    for i in time:
+        timevalue.append(i.text)
+    for i in temp:
+        tempvalue.append(int(i.text))
+    for i in humid:
+        humidvalue.append(int(i.text))
+    for i in predictTime:
+        predictTimevalue.append(i.text)
+    for i in predictRate:
+        predictRatevalue.append(int(i.text))
+
+    return {
+        'time':timevalue,
+        'temp':tempvalue,
+        'humid':humidvalue,
+        'predictTime':predictTimevalue,
+        'predictRate':predictRatevalue
+    }
 
 
 class BasicMetrics(object):

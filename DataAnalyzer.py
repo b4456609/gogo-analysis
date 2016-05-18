@@ -9,6 +9,7 @@ import time
 
 
 def weather(x):
+    print x
     tempValue = -4 / 9.0 * x.temp ** 2 + 200 / 9.0 * x.temp - 1600 / 9.0
     humd = round(x.humd * 100)
     if humd < 40:
@@ -73,6 +74,18 @@ def airCal(x):
     return int(res)
 
 
+def predictCal(x):
+    print x
+    sum = 0
+    for i in range(0, 4):
+        sum += weather(
+            WeatherClient.BasicMetrics(temp=x['temp'][i], humd=x['humid'][i] / 100.0, time=0, wind_speed_10min=0,
+                                       wind_dir_10min=0));
+    sum /= 4
+
+    return int(sum)
+
+
 def request():
     # request for metrics
     basicMetrics = WeatherClient.basic_metrics()
@@ -80,7 +93,7 @@ def request():
     sun = WeatherClient.getSunTime()
     rainMetrics = WeatherClient.rain_detial()
     airMetrics = WeatherClient.air_pollution()
-    # predictMetrics = WeatherClient.keelung_predict()
+    predictMetrics = WeatherClient.keelung_predict()
     LOGGER.info('basicMetrics' + basicMetrics.__str__())
 
     print basicMetrics
@@ -88,6 +101,7 @@ def request():
     print sun
     print rainMetrics
     print airMetrics
+    print predictMetrics
 
     jsonBody = {
         'basic': None,
@@ -100,8 +114,10 @@ def request():
             'uv': None,
             'sun': None,
             'rain': None,
-            'air': None
-        }
+            'air': None,
+            'predict': None
+        },
+        'predictMetrics': predictMetrics
     }
 
     if basicMetrics is not None:
@@ -133,6 +149,12 @@ def request():
         jsonBody['value']['air'] = airValue
         LOGGER.info('airValue' + str(airValue))
         jsonBody['air'] = airMetrics.__dict__
+
+    if predictMetrics is not None:
+        predictValue = sc.parallelize([predictMetrics]).map(predictCal).first()
+        jsonBody['value']['predict'] = predictValue
+        LOGGER.info('predictValue' + str(predictValue))
+        jsonBody['predictMetrics'] = predictMetrics
 
     basicMetrics.time = basicMetrics.time.isoformat()
     jsonBody['basic'] = basicMetrics.__dict__
