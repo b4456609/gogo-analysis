@@ -96,52 +96,58 @@ def getapi(dataid):
 
 
 def keelung_predict():
-    response = getapi("F-D0047-049")
-    response_xml = minidom.parseString(response.text.encode('utf-8'))
-    remove_blanks(response_xml)
-    response_xml.normalize()
-    root = ET.fromstring(response_xml.toxml('utf-8'))
-    # for name space
-    ns = {'cwb': 'urn:cwb:gov:tw:cwbcommon:0.1'}
-    # xpath use geocode for keelung
-    path = ".//cwb:location[cwb:geocode='" + geocode + "']"
-    # path = ".//cwb:geocode"
-    location = root.find(path, ns)
-    time = location.findall(
-        "./cwb:weatherElement[cwb:elementName='T']//cwb:dataTime", ns)
-    temp = location.findall(
-        "./cwb:weatherElement[cwb:elementName='T']//cwb:value", ns)
-    humid = location.findall(
-        "./cwb:weatherElement[cwb:elementName='RH']//cwb:value", ns)
-    predictTime = location.findall(
-        "./cwb:weatherElement[cwb:elementName='PoP']//cwb:startTime", ns)
-    predictRate = location.findall(
-        "./cwb:weatherElement[cwb:elementName='PoP']//cwb:value", ns)
+    try:
+        response = getapi("F-D0047-049")
+        response_xml = minidom.parseString(response.text.encode('utf-8'))
+        remove_blanks(response_xml)
+        response_xml.normalize()
+        root = ET.fromstring(response_xml.toxml('utf-8'))
+        # for name space
+        ns = {'cwb': 'urn:cwb:gov:tw:cwbcommon:0.1'}
+        # xpath use geocode for keelung
+        path = ".//cwb:location[cwb:geocode='" + geocode + "']"
+        # path = ".//cwb:geocode"
+        location = root.find(path, ns)
+        time = location.findall(
+            "./cwb:weatherElement[cwb:elementName='T']//cwb:dataTime", ns)
+        temp = location.findall(
+            "./cwb:weatherElement[cwb:elementName='T']//cwb:value", ns)
+        humid = location.findall(
+            "./cwb:weatherElement[cwb:elementName='RH']//cwb:value", ns)
+        predictTime = location.findall(
+            "./cwb:weatherElement[cwb:elementName='PoP']//cwb:startTime", ns)
+        predictRate = location.findall(
+            "./cwb:weatherElement[cwb:elementName='PoP']//cwb:value", ns)
 
-    timevalue = []
-    tempvalue = []
-    humidvalue = []
-    predictTimevalue = []
-    predictRatevalue = []
+        timevalue = []
+        tempvalue = []
+        humidvalue = []
+        predictTimevalue = []
+        predictRatevalue = []
 
-    for i in time:
-        timevalue.append(i.text)
-    for i in temp:
-        tempvalue.append(int(i.text))
-    for i in humid:
-        humidvalue.append(int(i.text))
-    for i in predictTime:
-        predictTimevalue.append(i.text)
-    for i in predictRate:
-        predictRatevalue.append(int(i.text))
+        for i in time:
+            timevalue.append(i.text)
+        for i in temp:
+            tempvalue.append(int(i.text))
+        for i in humid:
+            humidvalue.append(int(i.text))
+        for i in predictTime:
+            predictTimevalue.append(i.text)
+        for i in predictRate:
+            predictRatevalue.append(int(i.text))
 
-    return {
-        'time':timevalue,
-        'temp':tempvalue,
-        'humid':humidvalue,
-        'predictTime':predictTimevalue,
-        'predictRate':predictRatevalue
-    }
+        return {
+            'time': timevalue,
+            'temp': tempvalue,
+            'humid': humidvalue,
+            'predictTime': predictTimevalue,
+            'predictRate': predictRatevalue
+        }
+
+    except Exception as e:
+        print "Unexpected error in keelung_predict"
+        print str(e)
+        return None
 
 
 class BasicMetrics(object):
