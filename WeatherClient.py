@@ -128,13 +128,13 @@ def keelung_predict():
         for i in time:
             timevalue.append(i.text)
         for i in temp:
-            tempvalue.append(int(i.text))
+            tempvalue.append(int(i.text) or 0)
         for i in humid:
-            humidvalue.append(int(i.text))
+            humidvalue.append(int(i.text) or 0)
         for i in predictTime:
             predictTimevalue.append(i.text)
         for i in predictRate:
-            predictRatevalue.append(int(i.text))
+            predictRatevalue.append(int(i.text) or 0)
 
         return {
             'time': timevalue,
