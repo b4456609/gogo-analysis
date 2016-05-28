@@ -31,12 +31,17 @@ class SunTime(object):
 
 
 def getSunTime():
-    url = 'http://api.sunrise-sunset.org/json?lat=' + lat + '&lng=' + lng + '&formatted=0'
-    response = requests.get(url)
-    data = json.loads(response.content)
-    sunrise = parse(data['results']['sunrise']).astimezone(pytz.timezone('Asia/Taipei'))
-    sunset = parse(data['results']['sunset']).astimezone(pytz.timezone('Asia/Taipei'))
-    return SunTime(sunrise=sunrise, sunset=sunset)
+    try:
+        url = 'http://api.sunrise-sunset.org/json?lat=' + lat + '&lng=' + lng + '&formatted=0'
+        response = requests.get(url)
+        data = json.loads(response.content)
+        sunrise = parse(data['results']['sunrise']).astimezone(pytz.timezone('Asia/Taipei'))
+        sunset = parse(data['results']['sunset']).astimezone(pytz.timezone('Asia/Taipei'))
+        return SunTime(sunrise=sunrise, sunset=sunset)
+    except Exception as e:
+        print "Unexpected error in getUV"
+        print str(e)
+        return None
 
 
 def getUV():
