@@ -123,7 +123,7 @@ def keelung_predict():
             "./cwb:weatherElement[cwb:elementName='PoP']//cwb:startTime", ns)
         predictRate = location.findall(
             "./cwb:weatherElement[cwb:elementName='PoP']//cwb:value", ns)
-
+            
         timevalue = []
         tempvalue = []
         humidvalue = []
@@ -139,7 +139,8 @@ def keelung_predict():
         for i in predictTime:
             predictTimevalue.append(i.text)
         for i in predictRate:
-            predictRatevalue.append(int(i.text) or 0)
+            if i.text is not None:
+                predictRatevalue.append(int(i.text) or 0)
 
         return {
             'time': timevalue,
@@ -153,6 +154,7 @@ def keelung_predict():
         print "Unexpected error in keelung_predict"
         print str(e)
         return None
+keelung_predict()
 
 
 class BasicMetrics(object):
