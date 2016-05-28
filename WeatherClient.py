@@ -154,7 +154,6 @@ def keelung_predict():
         print "Unexpected error in keelung_predict"
         print str(e)
         return None
-keelung_predict()
 
 
 class BasicMetrics(object):
